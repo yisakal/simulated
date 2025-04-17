@@ -1,0 +1,97 @@
+---
+title: "simulated_hw"
+author: "Yishak Leka"
+date: "2025-04-17"
+output: html_document
+---
+## Prompt: Tidy Ideas
+#Steps:
+	#removing NAs
+  #standardizing strings (upper vs lower)
+  #cleaning column names
+  #removing duplicates
+  #converting lab values to tidy format
+  #maybe more!
+
+#Explore Data Generation Code [extra credit]
+	#Build a new data set with some new twists!
+## Documentation: steps, sub-steps/details
+  #Load the .xlsx file
+  #“tidy” the data
+  #export the data frame into a cleaned up .csv file
+  #upload zipped project folder (use git to manage your files/changes) 
+
+```{r}
+#First version (simulated_patient_data_v1) in excel format was directly opened out of R and sheet1 with Doctor note and sheet3 with bad data were manually deleted. Then, the first and second rows of the remaining sheet entitled "patient_data" were manually removed because they both contained table junk (title). "I" column was manually removed because it has no record. The highlighting colors were manually removed from rows and columns because removing highlighting colors is part of tidying spreadsheets. And then, the excel file was saved as simulated_patient_data_v2
+# Load necessary libraries
+library(readxl)
+library(dplyr)
+library(janitor)
+library(stringr)
+library(tidyr)
+
+# Load the Excel file
+simdf <- read_excel("C:/Users/14699/Desktop/UTSWMC/School_of_Health_Professions/Department_of_Health_Informatics/MSHI/My_Spring_2025_Courses/HI5305/Homeworks_Assignments/Dr_Andrew/simulated/ChatGPT_HW/corrupted/simulated_patient_data_v2.xlsx")
+```
+
+
+# Clean column names, remove rows with any NA values, standardize all character/string columns to lowercase, remove duplicate rows, and convert lab values to tidy format
+```{r}
+# 1. Remove rows with missing values
+simdf <- simdf %>%
+  drop_na()
+
+# The column with full name represents the data in the columns with first name and last name. Therefore, the two columns can be removed.
+# 2. Remove 'first_name' and 'last_name' columns
+simdf <- simdf %>%
+  select(-first_name, -`last name`)
+# The column named dd has duplicates the date data under the other column named dob. Therefore, the the column named dd can be removed.
+# 3. Remove 'dd' column
+simdf <- simdf %>%
+  select(-dd)
+# 4. Standardize strings (convert to lowercase for consistency)
+simdf <- simdf %>%
+  mutate(across(where(is.character), ~ str_to_lower(.)))
+
+# 5. Clean column names
+simdf <- simdf %>%
+  clean_names()
+
+# 6. Remove duplicate rows
+simdf <- simdf %>%
+  distinct()
+
+# 7. Ensure date columns are in Date format
+simdf <- simdf %>%
+  mutate(across(contains("dob"), as.Date)) %>%
+  mutate(across(contains("dd"), as.Date))
+
+# Print the first few rows of the cleaned data
+print(head(simdf))
+```
+
+
+# Further cleaning and putting the columns in the desired order
+```{r}
+#1. Rename the full name column to 'full_name'
+simdf <- simdf %>%
+  rename(full_name = fu_ll_name)
+
+#2. Rename the lab value column to 'lab_result'
+simdf <- simdf %>%
+  rename(lab_result = lab_values)
+#3. Put columns in the desired order
+simdf <- simdf %>%
+  select(full_name, gender, dob, age, diagnosis, treatment, lab_type, lab_result)
+#4. Standardize gender column: Assign 1 to female/f and 0 to male/m
+simdf <- simdf %>%
+ mutate(gender = case_when(
+    gender %in% c("female", "f") ~ 1,
+    gender %in% c("male", "m") ~ 0,
+    gender %in% c("na") ~ na,
+    gender %in% c("other") ~ other
+  ))
+# Save the cleaned data to a new CSV file
+write.csv(simdf, "cleaned_patient_data.csv", row.names = FALSE)
+```
+
